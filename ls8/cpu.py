@@ -7,30 +7,26 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        self.ram = [0]*265
+        self.ram = [0]*256
         self.reg = [0] * 8
 
-    def load(self):
+    def load(self, file):
         """Load a program into memory."""
 
         address = 0
 
-        # For now, we've just hardcoded a program:
+        with open(file) as f:
+            for line in f:
+                comments = line.split("#")
+                num = comments[0].strip()
 
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
-
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
-
+                try: 
+                    val = int(f'{num}'[2:],2)
+                except ValueError:
+                    continue
+                    
+                self.ram[address] = val
+                address += 1 
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -63,13 +59,16 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
+        NOP = 0
         HLT = 1
-        LDI = 130   
-        PRN = 71
+        LDI = 2
+        PRN = 7
+        MUL = 34
         pc = 0
 
         while True:
             ir = self.ram_read(pc) # Instruction Register, currently executing instruction
+            print(f'ir: {ir}')
             if ir == HLT:
                 pc +=1
                 break
@@ -81,8 +80,16 @@ class CPU:
                 pc +=3
 
             elif ir == PRN:
-                print(self.reg[self.ram_read(pc+1)   ])
+                print(self.reg[self.ram_read(pc+1)])
                 pc +=2
+
+            elif ir == MUL:
+                regAddressA = self.ram_read(pc+1)
+                regAddressB = self.ram_read(pc+2)
+                intA = self.reg[regAddressA]
+                intB = self.reg[regAddressB]
+                self.reg[regAddressA] =intA*intB
+                pc +=3
 
             else:
                 print(f"Unknown instruction: {ir}")
