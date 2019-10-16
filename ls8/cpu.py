@@ -9,6 +9,14 @@ class CPU:
         """Construct a new CPU."""
         self.ram = [0]*256
         self.reg = [0] * 8
+        self.pc = 0
+        self.branchtable = {
+            1: self.handle_HLT,
+            130: self.handle_LDI,
+            71: self.handle_PRN,
+            162: self.handle_MUL
+            162: self.handle_MUL
+        }
 
     def load(self, file):
         """Load a program into memory."""
@@ -21,7 +29,7 @@ class CPU:
                 num = comments[0].strip()
 
                 try: 
-                    val = int(f'{num}'[2:],2)
+                    val = int(f'{num}',2)
                 except ValueError:
                     continue
 
@@ -62,41 +70,32 @@ class CPU:
 
         print()
 
+    def handle_HLT(self):
+        self.pc +=1
+        sys.exit(1)
+
+    def handle_LDI(self):
+        regAddress = self.ram_read(self.pc+1)
+        integer = self.ram_read(self.pc+2)
+        self.reg[regAddress] = integer
+        self.pc +=3
+
+    def handle_PRN(self):
+        print(self.reg[self.ram_read(self.pc+1)])
+        self.pc +=2
+
+    def handle_MUL(self):
+        regAddressA = self.ram_read(self.pc+1)
+        regAddressB = self.ram_read(self.pc+2)
+        self.alu('MUL', regAddressA, regAddressB)
+        self.pc +=3
+
+    
     def run(self):
         """Run the CPU."""
-        NOP = 0
-        HLT = 1
-        LDI = 2
-        PRN = 7
-        MUL = 34
-        pc = 0
-
         while True:
-            ir = self.ram_read(pc) # Instruction Register, currently executing instruction
-            print(f'ir: {ir}')
-            if ir == HLT:
-                pc +=1
-                break
-
-            elif ir == LDI:
-                regAddress = self.ram_read(pc+1)
-                integer = self.ram_read(pc+2)
-                self.reg[regAddress] = integer
-                pc +=3
-
-            elif ir == PRN:
-                print(self.reg[self.ram_read(pc+1)])
-                pc +=2
-
-            elif ir == MUL:
-                regAddressA = self.ram_read(pc+1)
-                regAddressB = self.ram_read(pc+2)
-                self.alu('MUL', regAddressA, regAddressB)
-                pc +=3
-
-            else:
-                print(f"Unknown instruction: {ir}")
-                break
+            ir = self.ram_read(self.pc) # Instruction Register, currently executing instruction
+            self.branchtable[ir]()
 
     # accepts the address to read and return the value stored there.
     # MAR = Memory Address Register, address that is being read or written to
