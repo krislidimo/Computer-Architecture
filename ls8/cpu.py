@@ -91,9 +91,7 @@ class CPU:
             elif ir == MUL:
                 regAddressA = self.ram_read(pc+1)
                 regAddressB = self.ram_read(pc+2)
-                intA = self.reg[regAddressA]
-                intB = self.reg[regAddressB]
-                self.reg[regAddressA] =intA*intB
+                self.alu('MUL', regAddressA, regAddressB)
                 pc +=3
 
             else:
