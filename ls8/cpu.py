@@ -9,13 +9,15 @@ class CPU:
         """Construct a new CPU."""
         self.ram = [0]*256
         self.reg = [0] * 8
-        self.pc = 0
+        self.pc = 0 # Program Counter, address of the currently executing instruction
+        self.sp = 7 # stack pointer location R7
         self.branchtable = {
             1: self.handle_HLT,
             130: self.handle_LDI,
             71: self.handle_PRN,
-            162: self.handle_MUL
-            162: self.handle_MUL
+            162: self.handle_MUL,
+            69: self.handle_PUSH,
+            70: self.handle_POP
         }
 
     def load(self, file):
@@ -90,7 +92,20 @@ class CPU:
         self.alu('MUL', regAddressA, regAddressB)
         self.pc +=3
 
-    
+    def handle_PUSH(self):
+        regAddress = self.ram[self.pc + 1]
+        value = self.reg[regAddress]
+        self.reg[self.sp] -= 1
+        self.ram[self.reg[self.sp]] = value
+        self.pc += 2
+
+    def handle_POP(self):
+        regAddress = self.ram[self.pc + 1]
+        value = self.ram[self.reg[self.sp]]
+        self.reg[regAddress] = value
+        self.reg[self.sp] += 1
+        self.pc += 2
+
     def run(self):
         """Run the CPU."""
         while True:
