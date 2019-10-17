@@ -12,12 +12,15 @@ class CPU:
         self.pc = 0 # Program Counter, address of the currently executing instruction
         self.sp = 7 # stack pointer location R7
         self.branchtable = {
-            1: self.handle_HLT,
+            1:   self.handle_HLT,
             130: self.handle_LDI,
-            71: self.handle_PRN,
+            71:  self.handle_PRN,
+            160: self.handle_ADD,
             162: self.handle_MUL,
-            69: self.handle_PUSH,
-            70: self.handle_POP
+            69:  self.handle_PUSH,
+            70:  self.handle_POP,
+            80:  self.handle_CALL,
+            17:  self.handle_RET
         }
 
     def load(self, file):
@@ -72,19 +75,28 @@ class CPU:
 
         print()
 
+    # halt
     def handle_HLT(self):
         self.pc +=1
         sys.exit(1)
 
+    # load to register
     def handle_LDI(self):
         regAddress = self.ram_read(self.pc+1)
         integer = self.ram_read(self.pc+2)
         self.reg[regAddress] = integer
         self.pc +=3
 
+    # print
     def handle_PRN(self):
         print(self.reg[self.ram_read(self.pc+1)])
         self.pc +=2
+
+    def handle_ADD(self):
+        regAddressA = self.ram_read(self.pc+1)
+        regAddressB = self.ram_read(self.pc+2)
+        self.alu('ADD', regAddressA, regAddressB)
+        self.pc +=3
 
     def handle_MUL(self):
         regAddressA = self.ram_read(self.pc+1)
@@ -92,19 +104,35 @@ class CPU:
         self.alu('MUL', regAddressA, regAddressB)
         self.pc +=3
 
+    # handles stack addition
     def handle_PUSH(self):
         regAddress = self.ram[self.pc + 1]
         value = self.reg[regAddress]
-        self.reg[self.sp] -= 1
+        self.reg[self.sp] -= 1 # decrement the pointer address
         self.ram[self.reg[self.sp]] = value
         self.pc += 2
 
+    # handles stack removal
     def handle_POP(self):
         regAddress = self.ram[self.pc + 1]
         value = self.ram[self.reg[self.sp]]
         self.reg[regAddress] = value
         self.reg[self.sp] += 1
         self.pc += 2
+
+    # handles functions calls
+    def handle_CALL(self):
+        self.reg[self.sp] -= 1
+        self.ram[self.reg[self.sp]] = self.pc+2
+        regAddress = self.ram[self.pc+1]
+        self.reg[6] = self.pc+2
+        self.pc = self.reg[regAddress]
+
+    # handles function returns
+    def handle_RET(self):
+        pc = self.ram[self.reg[self.sp]]
+        self.reg[self.sp] += 1
+        self.pc = self.reg[6]
 
     def run(self):
         """Run the CPU."""
